@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prototipo Criptográfico: AES + RSA</title>
-    <!-- Tailwind CSS para el diseño rápido y moderno -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- forge.js para la criptografía -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/0.10.0/forge.min.js"></script>
 
     <style>
         .terminal-scroll::-webkit-scrollbar { width: 8px; }
         .terminal-scroll::-webkit-scrollbar-track { background: #1a202c; }
         .terminal-scroll::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
-        /* Animación suave para los pasos */
         .step-active { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
     </style>
 </head>
@@ -26,12 +22,13 @@
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold text-white"><i class="fa-solid fa-shield-halved text-blue-500 mr-2"></i>Cifrado Híbrido: AES + RSA</h1>
-                <p class="text-gray-400 text-sm mt-1">Laboratorio de demostración interactiva</p>
+                <p class="text-gray-400 text-sm mt-1">Laboratorio interactivo de cifrado y Handshake</p>
             </div>
 
-            <!-- Mapa de Nodos (Stepper) -->
             <div class="flex items-center space-x-2 mt-4 md:mt-0 text-sm font-mono">
-                <div id="step1" class="px-3 py-1 rounded border-2 border-green-500 bg-green-900/30 text-green-400 transition-all"><i class="fa-solid fa-key mr-1"></i>RSA Listo</div>
+                <div id="step0" class="px-3 py-1 rounded border-2 border-purple-500 bg-purple-900/30 text-purple-400 step-active"><i class="fa-solid fa-handshake mr-1"></i>Handshake</div>
+                <i class="fa-solid fa-arrow-right text-gray-600"></i>
+                <div id="step1" class="px-3 py-1 rounded border-2 border-gray-700 bg-gray-800 text-gray-500 transition-all"><i class="fa-solid fa-key mr-1"></i>RSA Listo</div>
                 <i class="fa-solid fa-arrow-right text-gray-600"></i>
                 <div id="step2" class="px-3 py-1 rounded border-2 border-gray-700 bg-gray-800 text-gray-500 transition-all"><i class="fa-solid fa-lock mr-1"></i>Cifrado</div>
                 <i class="fa-solid fa-arrow-right text-gray-600"></i>
@@ -42,13 +39,19 @@
         </div>
     </header>
 
-    <!-- Contenedor Principal (3 Columnas) -->
+    <!-- Contenedor Principal -->
     <main class="flex-grow max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <!-- COLUMNA 1: ALICE (EMISOR) -->
         <section class="bg-gray-800 rounded-lg p-5 border border-gray-700 flex flex-col shadow-lg relative">
             <div class="absolute -top-3 -left-3 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">A</div>
             <h2 class="text-xl font-semibold mb-4 text-blue-400 border-b border-gray-700 pb-2"><i class="fa-solid fa-user-astronaut mr-2"></i>Alice (Emisor)</h2>
+
+            <!-- Indicador de Handshake en Alice -->
+            <div class="bg-gray-900 border border-gray-700 rounded p-2 mb-4 flex justify-between items-center shadow-inner">
+                <span class="text-xs text-gray-400 font-bold uppercase">Clave Pública Destino:</span>
+                <span id="aliceHandshakeStatus" class="text-xs text-red-500 font-bold"><i class="fa-solid fa-circle-xmark mr-1"></i>No Sincronizada</span>
+            </div>
 
             <p class="text-xs text-gray-400 mb-2">Carga un ejemplo rápido:</p>
             <div class="flex space-x-2 mb-4">
@@ -61,7 +64,7 @@
             <textarea id="aliceInput" rows="5" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-gray-200 font-mono text-sm focus:border-blue-500 focus:outline-none mb-4" placeholder="Escribe tu mensaje aquí..."></textarea>
 
             <div class="mt-auto">
-                <button id="btnCifrar" onclick="flujoCifrado()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95">
+                <button id="btnCifrar" onclick="flujoCifrado()" class="w-full bg-gray-600 text-gray-400 font-bold py-2 px-4 rounded transition cursor-not-allowed" disabled>
                     <i class="fa-solid fa-lock mr-2"></i>Cifrar y Enviar a Bob
                 </button>
             </div>
@@ -74,18 +77,15 @@
 
             <p class="text-xs text-gray-400 mb-4 text-center">Esto es lo único que ve un atacante interceptando la red:</p>
 
-            <label class="text-xs text-red-300 font-bold">Clave AES de sesión (Cifrada con RSA Público):</label>
+            <label class="text-xs text-red-300 font-bold">Clave AES de sesión (Cifrada con RSA):</label>
             <textarea id="eveKey" rows="3" class="w-full bg-black border border-red-900 rounded p-2 text-red-500 font-mono text-xs mb-3 resize-none" readonly placeholder="Esperando datos..."></textarea>
 
             <label class="text-xs text-red-300 font-bold">Mensaje (Cifrado con la Clave AES):</label>
             <textarea id="eveMsg" rows="4" class="w-full bg-black border border-red-900 rounded p-2 text-red-500 font-mono text-xs mb-4 resize-none" readonly placeholder="Esperando datos..."></textarea>
 
-            <div class="mt-auto grid grid-cols-1 gap-2">
+            <div class="mt-auto">
                 <button onclick="ataqueCorromper()" class="w-full bg-red-900/60 hover:bg-red-700 text-red-200 text-sm py-2 rounded border border-red-800 transition">
                     <i class="fa-solid fa-bug mr-2"></i>Corromper Paquete (Integridad)
-                </button>
-                <button onclick="ataqueDesincronizar()" class="w-full bg-orange-900/60 hover:bg-orange-700 text-orange-200 text-sm py-2 rounded border border-orange-800 transition">
-                    <i class="fa-solid fa-rotate mr-2"></i>Regenerar RSA de Bob (Desincronizar)
                 </button>
             </div>
         </section>
@@ -98,6 +98,14 @@
                 <span id="bobStatus" class="text-xs px-2 py-1 bg-green-900/50 rounded-full text-green-300 hidden">Datos Recibidos</span>
             </h2>
 
+            <!-- Botón de Handshake -->
+            <div class="mb-4 bg-gray-900 p-3 rounded border border-gray-700 shadow-inner">
+                <button onclick="ejecutarHandshake()" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold py-2 px-4 rounded shadow-lg transition transform hover:scale-[1.02] active:scale-95 mb-2">
+                    <i class="fa-solid fa-handshake mr-2"></i>Generar Claves RSA (Handshake)
+                </button>
+                <textarea id="bobPubKeyDisplay" rows="2" class="w-full bg-black border border-gray-700 rounded p-1 text-purple-400 font-mono text-[10px] resize-none" readonly placeholder="Clave Pública generada se mostrará aquí..."></textarea>
+            </div>
+
             <div class="mb-4">
                 <button id="btnDescifrar" onclick="flujoDescifrado()" disabled class="w-full bg-gray-600 text-gray-400 font-bold py-2 px-4 rounded transition cursor-not-allowed">
                     <i class="fa-solid fa-unlock-keyhole mr-2"></i>Descifrar Paquete
@@ -108,13 +116,13 @@
             <input type="text" id="bobKey" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-green-400 font-mono text-xs mb-4" readonly placeholder="Esperando descifrado RSA...">
 
             <label class="text-sm text-gray-400 mb-1">Mensaje Revelado:</label>
-            <textarea id="bobOutput" rows="5" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-gray-200 font-mono text-sm focus:outline-none mb-4" readonly placeholder="Esperando descifrado AES..."></textarea>
+            <textarea id="bobOutput" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-gray-200 font-mono text-sm focus:outline-none mb-4" readonly placeholder="Esperando descifrado AES..."></textarea>
 
         </section>
 
     </main>
 
-    <!-- Consola de Logs (Inferior) -->
+    <!-- Consola de Logs -->
     <footer class="bg-black border-t-2 border-gray-700 p-4 font-mono text-xs h-48 flex flex-col">
         <div class="flex justify-between text-gray-500 mb-2 uppercase font-bold tracking-wider border-b border-gray-800 pb-1">
             <span>Terminal de Operaciones Criptográficas</span>
@@ -123,24 +131,16 @@
         <div id="terminal" class="overflow-y-auto terminal-scroll flex-grow whitespace-pre-wrap"></div>
     </footer>
 
-    <!-- Lógica de la Aplicación -->
     <script>
         // ESTADO GLOBAL
         let bobRsaKeyPair = null;
         let aesIvGlobal = null;
 
-        // Al cargar la página, generamos las llaves de Bob de forma asíncrona
         window.onload = function() {
-            logInfo("Inicializando sistema... Generando llaves RSA (1024 bits) para Bob.");
-            setTimeout(() => {
-                bobRsaKeyPair = forge.pki.rsa.generateKeyPair({bits: 1024, e: 0x10001});
-                logSuccess("Par de claves RSA de Bob generadas correctamente.");
-                logInfo("Alice ya tiene acceso a la clave PÚBLICA de Bob para cifrar la sesión.");
-            }, 50);
+            logInfo("Sistema listo. Esperando que Bob inicie el protocolo de Handshake.");
         };
 
-        // --- FUNCIONES DE INTERFAZ ---
-
+        // --- UTILIDADES ---
         function log(msg, type="info") {
             const term = document.getElementById('terminal');
             const time = new Date().toLocaleTimeString();
@@ -150,6 +150,7 @@
             if(type === "success") { colorClass = "text-green-400"; icon = "fa-check"; }
             else if(type === "error") { colorClass = "text-red-500"; icon = "fa-xmark"; }
             else if(type === "eve") { colorClass = "text-orange-400"; icon = "fa-mask"; }
+            else if(type === "handshake") { colorClass = "text-purple-400"; icon = "fa-handshake"; }
 
             term.innerHTML += `<div class="${colorClass} mb-1"><span class="text-gray-600">[${time}]</span> <i class="fa-solid ${icon} mr-1"></i> ${msg}</div>`;
             term.scrollTop = term.scrollHeight;
@@ -158,9 +159,10 @@
         const logSuccess = (m) => log(m, "success");
         const logError = (m) => log(m, "error");
         const logEve = (m) => log(m, "eve");
+        const logHandshake = (m) => log(m, "handshake");
 
         function setStep(stepNum) {
-            for(let i=1; i<=4; i++) {
+            for(let i=0; i<=4; i++) {
                 const el = document.getElementById(`step${i}`);
                 if(i === stepNum) {
                     el.className = "px-3 py-1 rounded border-2 border-blue-500 bg-blue-900/30 text-blue-400 step-active";
@@ -180,9 +182,34 @@
             logInfo(`Preset '${tipo}' cargado en el editor de Alice.`);
         }
 
-        // --- FLUJO CRIPTOGRÁFICO ---
+        // --- PASO 0: HANDSHAKE ---
+        function ejecutarHandshake() {
+            logHandshake("Iniciando Handshake... Generando nuevo par de llaves RSA (1024 bits) para Bob.");
 
+            setTimeout(() => {
+                bobRsaKeyPair = forge.pki.rsa.generateKeyPair({bits: 1024, e: 0x10001});
+                const pubKeyPem = forge.pki.publicKeyToPem(bobRsaKeyPair.publicKey);
+
+                document.getElementById('bobPubKeyDisplay').value = pubKeyPem;
+
+                // Actualizar UI de Alice
+                const aliceStatus = document.getElementById('aliceHandshakeStatus');
+                aliceStatus.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>Sincronizada';
+                aliceStatus.className = "text-xs text-green-400 font-bold";
+
+                // Habilitar botón de cifrar
+                const btnCifrar = document.getElementById('btnCifrar');
+                btnCifrar.disabled = false;
+                btnCifrar.className = "w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95";
+
+                setStep(1);
+                logSuccess("Handshake completado. Alice ha recibido la clave PÚBLICA de Bob de forma segura.");
+            }, 50);
+        }
+
+        // --- FLUJO CRIPTOGRÁFICO ---
         function flujoCifrado() {
+            if(!bobRsaKeyPair) return alert("Primero debes ejecutar el Handshake.");
             const mensaje = document.getElementById('aliceInput').value;
             if(!mensaje) return alert("Alice necesita un mensaje para cifrar.");
 
@@ -194,10 +221,9 @@
 
             logInfo("--- INICIANDO CIFRADO HÍBRIDO (ALICE) ---");
 
-            // 1. AES: Generar llave aleatoria y cifrar mensaje
-            const aesKey = forge.random.getBytesSync(16); // 128 bits
+            // 1. AES
+            const aesKey = forge.random.getBytesSync(16);
             aesIvGlobal = forge.random.getBytesSync(16);
-
             logInfo("1. Llave simétrica temporal (AES-128) generada.");
 
             const cipher = forge.cipher.createCipher('AES-CBC', aesKey);
@@ -205,24 +231,23 @@
             cipher.update(forge.util.createBuffer(mensaje, 'utf8'));
             cipher.finish();
             const mensajeCifradoBytes = cipher.output.getBytes();
-
             logInfo("2. Mensaje cifrado rápidamente usando AES-CBC.");
 
-            // 2. RSA: Cifrar la llave AES usando la Llave Pública de Bob
+            // 2. RSA
             const encryptedAesKeyBytes = bobRsaKeyPair.publicKey.encrypt(aesKey);
-            logInfo("3. Llave AES encapsulada usando la llave Pública RSA de Bob.");
+            logInfo("3. Llave AES encapsulada usando la llave Pública RSA de Bob (previamente sincronizada).");
 
-            // 3. Enviar al Canal Inseguro (Eve)
+            // 3. Enviar a Eve
             document.getElementById('eveKey').value = forge.util.encode64(encryptedAesKeyBytes);
             document.getElementById('eveMsg').value = forge.util.encode64(mensajeCifradoBytes);
 
             setStep(3);
-            logEve("Los datos viajan por la red. Eve solo puede ver caracteres en Base64 sin sentido matemático.");
+            logEve("Los datos viajan por la red. Eve solo ve ruido cifrado.");
 
             // Habilitar a Bob
-            const btn = document.getElementById('btnDescifrar');
-            btn.disabled = false;
-            btn.className = "w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95";
+            const btnDesc = document.getElementById('btnDescifrar');
+            btnDesc.disabled = false;
+            btnDesc.className = "w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95";
             document.getElementById('bobStatus').classList.remove('hidden');
         }
 
@@ -232,51 +257,45 @@
 
             const eveKeyB64 = document.getElementById('eveKey').value;
             const eveMsgB64 = document.getElementById('eveMsg').value;
-
             let aesKeyRecuperada = null;
 
-            // 1. Descifrar llave AES usando RSA Privado
             try {
                 const encryptedAesKeyBytes = forge.util.decode64(eveKeyB64);
                 aesKeyRecuperada = bobRsaKeyPair.privateKey.decrypt(encryptedAesKeyBytes);
                 document.getElementById('bobKey').value = forge.util.encode64(aesKeyRecuperada);
                 logSuccess("1. Bob extrajo la llave AES exitosamente usando su llave RSA Privada.");
             } catch (error) {
-                logError("FALLO CRÍTICO (RSA): Bob no pudo descifrar la llave AES. Su llave privada no coincide (Asimetría rota).");
+                logError("FALLO CRÍTICO (RSA): Bob no pudo descifrar la llave AES. ¿Se regeneraron las llaves RSA después de enviar el mensaje?");
                 document.getElementById('bobKey').value = "ERROR_RSA_MISMATCH";
                 return errorUIRecovery();
             }
 
-            // 2. Descifrar el mensaje original usando la llave AES
             try {
                 const mensajeCifradoBytes = forge.util.decode64(eveMsgB64);
                 const decipher = forge.cipher.createDecipher('AES-CBC', aesKeyRecuperada);
-                decipher.start({iv: aesIvGlobal}); // El IV suele ser público
+                decipher.start({iv: aesIvGlobal});
                 decipher.update(forge.util.createBuffer(mensajeCifradoBytes));
-                const result = decipher.finish(); // Esto verifica el padding (Integridad básica)
+                const result = decipher.finish();
 
                 if (result) {
-                    const textoRecuperado = decipher.output.toString('utf8');
-                    document.getElementById('bobOutput').value = textoRecuperado;
+                    document.getElementById('bobOutput').value = decipher.output.toString('utf8');
                     document.getElementById('bobOutput').className = "w-full bg-gray-900 border-2 border-green-500 rounded p-2 text-green-300 font-mono text-sm mb-4";
                     logSuccess("2. Mensaje descifrado exitosamente con AES. Integridad validada.");
                 } else {
                     throw new Error("Fallo en finish() del descifrado AES.");
                 }
             } catch (error) {
-                logError("FALLO CRÍTICO (AES): El descifrado falló. El paquete fue alterado en tránsito o está corrupto (Efecto Avalancha).");
+                logError("FALLO CRÍTICO (AES): El descifrado falló. El paquete fue alterado en tránsito o está corrupto.");
                 document.getElementById('bobOutput').value = "## ERROR DE INTEGRIDAD - DATOS CORRUPTOS ##";
                 return errorUIRecovery();
             }
         }
 
         // --- ATAQUES (EVE) ---
-
         function ataqueCorromper() {
             const msgInput = document.getElementById('eveMsg');
             if(!msgInput.value) return alert("No hay datos en el canal para corromper.");
 
-            // Cambiamos un caracter al azar en medio de la cadena B64
             let chars = msgInput.value.split('');
             const index = Math.floor(chars.length / 2);
             chars[index] = chars[index] === 'A' ? 'B' : 'A';
@@ -285,13 +304,7 @@
             msgInput.classList.add('border-red-500', 'bg-red-900/30');
             setTimeout(() => msgInput.classList.remove('border-red-500', 'bg-red-900/30'), 500);
             logEve("Eve modificó un (1) solo bit del criptograma AES en tránsito.");
-            setStep(3); // Forzar estado de red
-        }
-
-        function ataqueDesincronizar() {
-            logEve("Atacante provocando regeneración de llaves en el destino...");
-            bobRsaKeyPair = forge.pki.rsa.generateKeyPair({bits: 1024, e: 0x10001});
-            logEve("Bob ahora tiene un NUEVO par de llaves. La llave privada anterior (necesaria para este paquete) se ha perdido.");
+            setStep(3);
         }
 
         function errorUIRecovery() {
